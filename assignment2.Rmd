@@ -1,6 +1,6 @@
 ---
 title: 'EDS 223: assignment 2'
-author: "{student name and collaborators}"
+author: "{Sujan}"
 output: html_document
 date: "2023-10-17"
 ---
@@ -51,21 +51,38 @@ We will be working observations of birds from 2021 onward.
 ### Investigate the legacy of redlining in current environmental (in)justice
 Load relevant packages.
 ```{r }
-
+library("sf")
+library("tidyverse")
+library("spDataLarge")
 ```
 
 Read in EJScreen data and filter to Los Angeles County
 (5 points)
 ```{r }
+##read the environmental justic screening data for Los Angeles county
+ejscreen <- st_read("data/EJSCREEN_2023_BG_StatePct_with_AS_CNMI_GU_VI.gdb/")
 
+# filter for los angeles county
+los_angeles <- ejscreen %>%
+               filter(CNTY_NAME == "Los Angeles County")
 ```
 
 Make a map of wastewater discharge by census block groups. Indicate which census block groups are above the 95th percentile of national values for wastewater discharge by adding a centroid.
 (10 points)
 ```{r }
+ggplot(los_angeles) +
+  geom_sf(aes(color = PWDIS))
 
+##agregate wastewater based on sum and create centroid for this
+la_centroids <- st_centroid(los_angeles)
+
+##add centroid 
+ggplot(los_angeles) +
+  geom_sf(aes(color = PWDIS)) +
+  geom_sf(data = la_centroids %>% filter(PWDIS > 0.95), aes(size = PWDIS), color = "red")
 
 ```
+
 Find the percent of census block groups that have:  
 - less than 5% of the population is considered low income
 (5 points)
