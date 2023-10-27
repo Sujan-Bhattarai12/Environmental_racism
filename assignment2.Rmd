@@ -54,6 +54,8 @@ Load relevant packages.
 library("sf")
 library("tidyverse")
 library("spDataLarge")
+library("tmap")
+library("rmapshaper")
 ```
 
 Read in EJScreen data and filter to Los Angeles County
@@ -70,24 +72,41 @@ los_angeles <- ejscreen %>%
 Make a map of wastewater discharge by census block groups. Indicate which census block groups are above the 95th percentile of national values for wastewater discharge by adding a centroid.
 (10 points)
 ```{r }
+#wastewater discharge is mentioned as PWDIS
 ggplot(los_angeles) +
   geom_sf(aes(color = PWDIS))
 
-##agregate wastewater based on sum and create centroid for this
+##create centroid, further filter them to have only 0.95 quantile
 la_centroids <- st_centroid(los_angeles)
+la_centroid_with_95percentile <- quantile(la_centroids$PWDIS, 0.95, na.rm = TRUE)
+
+##fitler where PWDIS is greater than la_centroids_with_95_percentile
+la_centroids_filtered <- la_centroids %>% 
+                         filter(PWDIS > la_centroid_with_95percentile)
 
 ##add centroid 
 ggplot(los_angeles) +
-  geom_sf(aes(color = PWDIS)) +
-  geom_sf(data = la_centroids %>% filter(PWDIS > 0.95), aes(size = PWDIS), color = "red")
-
+  geom_sf(aes(fill = PWDIS))+
+  geom_sf(data = la_centroids_filtered, color = "red", size = 0.5)+
+  theme_bw()
+  
 ```
 
 Find the percent of census block groups that have:  
 - less than 5% of the population is considered low income
 (5 points)
 ```{r }
+##filter for rows where LOWINCPCT is less than 5%
+less_than_5percent <- los_angeles %>% filter(LOWINCPCT < 0.05)
 
+##Find the proportion using dplyr
+
+proportion_calucalated <- los_angeles %>% 
+                          summarize(proportion = nrow(less_than_5percent)/nrow(los_angeles)*100) %>% 
+                          pull(proportion)
+
+##diplay the answer
+proportion_calucalated
 
 ```
 
@@ -96,6 +115,25 @@ Find the percent of census block groups that are:
 - above the 80th percentile for Superfund proximity
 (10 points)
 ```{r }
+##first create the new column that calculates percentiles for values
+PM2.5_greater_than_eighty <- los_angeles %>%
+                             filter(PM25 > quantile(los_angeles$PM25, 0.8, na.rm = TRUE))
+
+proportion_pm25 <- los_angeles %>% 
+              summarize(proportion = nrow(PM2.5_greater_than_eighty)/nrow(los_angeles)*100) %>% 
+              pull(proportion)
+
+proportion_pm25
+
+##for the superfund proximity
+superfund_greater_than_eighty <- los_angeles %>%
+                                 filter(PNPL > quantile(los_angeles$PNPL, 0.8, na.rm = TRUE))
+
+proportion_superfund <- los_angeles %>% 
+              summarize(proportion = nrow(superfund_greater_than_eighty)/nrow(los_angeles)*100) %>% 
+              pull(proportion)
+
+proportion_superfund
 
 
 ```
@@ -110,15 +148,45 @@ LA_redlining <- st_read("https://dsl.richmond.edu/panorama/redlining/static/down
 Make a map of historical redlining boundaries, colored by HOLC grade.
 (5 points)
 ```{r }
+redlining <- ggplot(LA_redlining)+
+             geom_sf(aes(fill = holc_grade))+
+             theme_bw()+
+             labs(fill = "Redlining area Environmental Justice Screening")
 
-
+redlining
 ```
 
 Find the number of census block groups that fall within areas with HOLC grades
 hint: make sure the CRS match
 (15 points)
 ```{r eval=FALSE}
+##subsetting based on within values
 
+##transform crs one to another to match
+los_angeles_transformed <- st_transform(los_angeles, crs = st_crs(LA_redlining))
+
+##check if they are valid geometry objects
+LA_redlining <- st_make_valid(LA_redlining)
+los_angeles_transformed <- st_make_valid(los_angeles_transformed)
+
+#####based on this method, there are only 887 regions within redlining
+container <- st_within(los_angeles_transformed, LA_redlining)
+logical_values_containing_redlabling <- lengths(container) > 0
+
+
+###make the dataframe
+dataframe_with_redlabeled_region <- los_angeles_transformed[logical_values_containing_redlabling, ]
+nrow(dataframe_with_redlabeled_region)
+
+# #Using intersection method
+# 
+# ##  use intersect method to select only those areas where redlining was counted
+# la_subset <- los_angeles_transformed[LA_redlining, ]
+# 
+# tm_shape(la_subset) +
+#   tm_fill()
+#   tm_shape(world_random) +
+#   tm_fill(fill = "red")
 ```
 
 Summarize current conditions based on EJScreen data within historical redlining categories using the mean of the following variables:  
@@ -128,12 +196,23 @@ Summarize current conditions based on EJScreen data within historical redlining 
 - percentile for air toxics cancer risk
 (20 points)
 ```{r }
-
-
+##Inner join the redline data with census block subset 
+random_joined  <- st_join(dataframe_with_redlabeled_region, LA_redlining) %>% 
+                  group_by(holc_grade) %>% 
+                  summarize(mean_of_low_income = mean(LOWINCPCT),
+                            mean_of_pm2.5_percentile = mean(P_PM25),
+                            mean_of_low_life_Expectancy = mean(P_LIFEEXPPCT, na.rm = TRUE),
+                            mean_of_p_cancer = mean(P_CANCER))
+                         
 ```
 
 Please write 2-3 sentences reflecting on these results.
 (5 points)
+
+Based on the data, there seems to have strong environmental racism in the LA area. The worse graded area like Grade B area and Grade C area
+have the highest percentile for low life expectancy, cancer, and air pollution. In contrast, A graded area has comparatively low values for
+all of these parameters, suggesting that historically redlined areas are not good residential areas even in present context.
+
 
 ### Investigate the legacy of redlining in biodiversity observations
 
@@ -141,6 +220,13 @@ For bird observations from 2022 that fall within neighborhoods with HOLC grads, 
 hint: make sure that the bird observations have the same CRS as redlining data.
 (20 points)
 ````{r }
+bird <- st_read("data/gbif-birds-LA/gbif-birds-LA.shp") %>% 
+        filter(year >= 2022)
+
+##change the CRS, even without chekcing
+bird_crs_transformed <- st_transform(bird, crs = st_crs(dataframe_with_redlabeled_region))
+
+## join the data
 
 
 ```
