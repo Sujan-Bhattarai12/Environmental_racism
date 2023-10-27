@@ -51,11 +51,15 @@ We will be working observations of birds from 2021 onward.
 ### Investigate the legacy of redlining in current environmental (in)justice
 Load relevant packages.
 ```{r }
-library("sf")
-library("tidyverse")
-library("spDataLarge")
-library("tmap")
-library("rmapshaper")
+library(sf)
+library(raster)
+library(terra)
+library(spData)
+library(spDataLarge)
+library(tidyverse)
+library(ggspatial)
+library(patchwork)
+library(ggmap)
 ```
 
 Read in EJScreen data and filter to Los Angeles County
@@ -88,8 +92,11 @@ la_centroids_filtered <- la_centroids %>%
 ggplot(los_angeles) +
   geom_sf(aes(fill = PWDIS))+
   geom_sf(data = la_centroids_filtered, color = "red", size = 0.5)+
-  theme_bw()
-  
+  theme_bw()+
+  annotation_scale(plot_unit = "m")+
+  annotation_north_arrow( location = "br", 
+                          height = unit(1, "cm"))
+
 ```
 
 Find the percent of census block groups that have:  
@@ -116,26 +123,35 @@ Find the percent of census block groups that are:
 (10 points)
 ```{r }
 ##first create the new column that calculates percentiles for values
-PM2.5_greater_than_eighty <- los_angeles %>%
-                             filter(PM25 > quantile(los_angeles$PM25, 0.8, na.rm = TRUE))
+# PM2.5_greater_than_eighty <- los_angeles %>%
+#                              filter(PNPL > quantile(los_angeles$PNPL, 0.8, na.rm = TRUE) & PM25 > quantile(los_angeles$PM25, 0.8, na.rm = TRUE))
+# 
+# proportion_pm25 <- los_angeles %>% 
+#               summarize(proportion = nrow(PM2.5_greater_than_eighty)/nrow(los_angeles)*100) %>% 
+#               pull(proportion)
+# 
+# proportion_pm25
+# 
+# ##for the superfund proximity
+# superfund_greater_than_eighty <- los_angeles %>%
+#                                  filter(PNPL > quantile(los_angeles$PNPL, 0.8, na.rm = TRUE))
+# 
+# proportion_superfund <- los_angeles %>% 
+#               summarize(proportion = nrow(superfund_greater_than_eighty)/nrow(los_angeles)*100) %>% 
+#               pull(proportion)
+# 
+# proportion_superfund
 
-proportion_pm25 <- los_angeles %>% 
-              summarize(proportion = nrow(PM2.5_greater_than_eighty)/nrow(los_angeles)*100) %>% 
-              pull(proportion)
+##using percentile coumns
 
-proportion_pm25
+pm_superfund <- los_angeles %>% 
+                filter(P_PM25 > 80 & P_PNPL > 80)
 
-##for the superfund proximity
-superfund_greater_than_eighty <- los_angeles %>%
-                                 filter(PNPL > quantile(los_angeles$PNPL, 0.8, na.rm = TRUE))
+proportion <- los_angeles %>% 
+              summarize(prop = nrow(pm_superfund)/nrow(los_angeles)*100) %>% 
+              pull(prop)
 
-proportion_superfund <- los_angeles %>% 
-              summarize(proportion = nrow(superfund_greater_than_eighty)/nrow(los_angeles)*100) %>% 
-              pull(proportion)
-
-proportion_superfund
-
-
+proportion
 ```
 
 Import redlining information for Los Angeles.
@@ -151,7 +167,10 @@ Make a map of historical redlining boundaries, colored by HOLC grade.
 redlining <- ggplot(LA_redlining)+
              geom_sf(aes(fill = holc_grade))+
              theme_bw()+
-             labs(fill = "Redlining area Environmental Justice Screening")
+             labs(fill = "Redlining area Environmental Justice Screening")+
+  annotation_scale(plot_unit = "m")+
+  annotation_north_arrow( location = "tr", 
+                          height = unit(0.5, "cm"))
 
 redlining
 ```
@@ -178,15 +197,6 @@ logical_values_containing_redlabling <- lengths(container) > 0
 dataframe_with_redlabeled_region <- los_angeles_transformed[logical_values_containing_redlabling, ]
 nrow(dataframe_with_redlabeled_region)
 
-# #Using intersection method
-# 
-# ##  use intersect method to select only those areas where redlining was counted
-# la_subset <- los_angeles_transformed[LA_redlining, ]
-# 
-# tm_shape(la_subset) +
-#   tm_fill()
-#   tm_shape(world_random) +
-#   tm_fill(fill = "red")
 ```
 
 Summarize current conditions based on EJScreen data within historical redlining categories using the mean of the following variables:  
@@ -240,12 +250,18 @@ library(tmap)
 ########aggregate 
 tm_shape(LA_redlining)+
     tm_fill(fill = "holc_grade", palette = c("green", "blue", "yellow", 'black'), alpha = 1)+
-  tm_shape(result)+
-    tm_dots(col = 'percent_of_birds', palette=c('16' ='black', '19'='yellow', '29'='blue', '36' ='red'))
+    tm_shape(result)+
+    tm_dots(col = 'percent_of_birds', palette=c('16' ='black', '19'='yellow', '29'='blue', '36' ='red')) + 
+    tm_scale_bar(location = c("bottomright"), position = c("left", "bottom"))+
+    tm_compass(type = "arrow", position = c("right", "top"))
 
 ```
 
 Please write 2-3 sentences reflecting on these results. Are they surprising? If so, why? What are some potential implications?
 (5 points)
 Based on the graph, Most A graded areas(green areas in the graph) has black dots(percentage of birds diversity within all redlined areas).
-This suggest that the areas where least facilities were available actually has higher bird diversity. 
+This suggest that the areas with low grade were high in bird diversity. The potential implication of this finding is that low graded areas offer unique habitat to bird species, thus policy makers should be attentive on this matter. Moreover, this challenges the belief that low graded areas have low diversity, thus more research is required so that biodiversity conservation plans can be included to Environmental plans.
+
+
+
+
