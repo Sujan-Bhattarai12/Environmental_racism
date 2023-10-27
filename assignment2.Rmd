@@ -224,12 +224,28 @@ bird <- st_read("data/gbif-birds-LA/gbif-birds-LA.shp") %>%
         filter(year >= 2022)
 
 ##change the CRS, even without chekcing
-bird_crs_transformed <- st_transform(bird, crs = st_crs(dataframe_with_redlabeled_region))
+bird_crs_transformed <- st_transform(bird, crs = st_crs(LA_redlining))
+
+##subset only redlined areas from bird dataset
+bird_subset <- bird_crs_transformed[LA_redlining, ]
 
 ## join the data
+bird_redlined <- st_join(LA_redlining, bird_subset)
 
+result <- bird_redlined %>% group_by(holc_grade) %>% 
+          mutate(percent_of_birds = as.character(round(n()/nrow(bird_redlined)*100), 2))
+
+#noerror untill this point
+library(tmap)
+########aggregate 
+tm_shape(LA_redlining)+
+    tm_fill(fill = "holc_grade", palette = c("green", "blue", "yellow", 'black'), alpha = 1)+
+  tm_shape(result)+
+    tm_dots(col = 'percent_of_birds', palette=c('16' ='black', '19'='yellow', '29'='blue', '36' ='red'))
 
 ```
 
 Please write 2-3 sentences reflecting on these results. Are they surprising? If so, why? What are some potential implications?
 (5 points)
+Based on the graph, Most A graded areas(green areas in the graph) has black dots(percentage of birds diversity within all redlined areas).
+This suggest that the areas where least facilities were available actually has higher bird diversity. 
