@@ -322,7 +322,7 @@ tm_shape(LA_redlining)+
     tm_dots(col = 'percent_of_birds', palette=c('16' ='red', '19'='yellow', '29'='blue', '36' ='green')) + 
     tm_scale_bar(location = c("bottomright"), position = c("left", "bottom"))+
     tm_compass(type = "arrow", position = c("right", "top"))+
-  ggtitle("Redlinining areas and avearge bird diversity")
+  tm_layout(title = "Redlinining areas and avearge bird diversity")
 
 ```
 
