@@ -1,8 +1,7 @@
 ---
-title: 'EDS 223: assignment 2'
+Project: 'Environmental Racism and Biodiversity integrity'
 author: "{Sujan}"
 output: html_document
-date: "2023-10-17"
 editor_options: 
   markdown: 
     wrap: 72
@@ -61,9 +60,7 @@ Check out coverage by
 
 ### Data
 
-#### EJScreen
-
-We will be working with data from the United States Environmental
+I will be working with data from the United States Environmental
 Protection Agency's EJScreen: Environmental Justice Screening and
 Mapping Tool.
 
@@ -103,7 +100,7 @@ digitized maps and information from the HOLC as part of the [Mapping
 Inequality](https://dsl.richmond.edu/panorama/redlining/#loc=5/39.1/-94.58)
 project.
 
-We will be working with maps of HOLC grade designations for Los Angeles.
+I will be working with maps of HOLC grade designations for Los Angeles.
 Information on the data can be found
 [here](https://dsl.richmond.edu/panorama/redlining/#loc=5/39.1/-94.58&text=downloads).[^5]
 
@@ -118,9 +115,7 @@ The [Global Biodiversity Information Facility](gbif.org) is the largest
 aggregator of biodiversity observations in the world. Observations
 typically include a location and date that a species was observed.
 
-We will be working observations of birds from 2021 onward.
-
-## Assignment
+I will be working observations of birds from 2021 onward.
 
 ### Investigate the legacy of redlining in current environmental (in)justice
 
@@ -139,7 +134,7 @@ library(ggmap)
 library(tmap)
 ```
 
-Read in EJScreen data and filter to Los Angeles County (5 points)
+Read in EJScreen data and filter to Los Angeles County
 
 ```{r }
 ##read the environmental justic screening data for Los Angeles county
@@ -152,7 +147,7 @@ los_angeles <- ejscreen %>%
 
 Make a map of wastewater discharge by census block groups. Indicate
 which census block groups are above the 95th percentile of national
-values for wastewater discharge by adding a centroid. (10 points)
+values for wastewater discharge by adding a centroid.
 
 ```{r fig.width= 5, fig.height=10 }
 ##create centroid, further filter them to have only 0.95 quantile
@@ -162,7 +157,10 @@ la_centroid_with_95percentile <- quantile(la_centroids$PWDIS, 0.95, na.rm = TRUE
 ##fitler where PWDIS is greater than la_centroids_with_95_percentile
 la_centroids_filtered <- la_centroids %>% 
                          filter(PWDIS > la_centroid_with_95percentile)
+```
 
+
+```{r fig.width= 5, fig.height=10 }
 ##add centroid 
 ggplot(los_angeles) +
   geom_sf(aes(fill = PWDIS))+
@@ -178,7 +176,7 @@ ggplot(los_angeles) +
 ```
 
 Find the percent of census block groups that have:\
-- less than 5% of the population is considered low income (5 points)
+- less than 5% of the population is considered low income.
 
 ```{r }
 ##filter for rows where LOWINCPCT is less than 5%
@@ -188,10 +186,6 @@ less_than_5percent <- los_angeles %>% filter(LOWINCPCT < 0.05)
 proportion_calucalated <- los_angeles %>% 
                           summarize(proportion = nrow(less_than_5percent)/nrow(los_angeles)*100) %>% 
                           pull(proportion)
-
-##diplay the answer
-proportion_calucalated
-
 ```
 
 Find the percent of census block groups that are:\
@@ -207,14 +201,13 @@ pm_superfund <- los_angeles %>%
 proportion <- los_angeles %>% 
               summarize(prop = nrow(pm_superfund)/nrow(los_angeles)*100) %>% 
               pull(prop)
-
-proportion
 ```
 
 Import redlining information for Los Angeles.
 
 ```{r }
-LA_redlining <- st_read("https://dsl.richmond.edu/panorama/redlining/static/downloads/geojson/CALosAngeles1939.geojson") %>%
+LA_redlining <- st_read(
+  "https://dsl.richmond.edu/panorama/redlining/static/downloads/geojson/CALosAngeles1939.geojson") %>%
   st_make_valid()
 
 ```
@@ -298,6 +291,7 @@ same CRS as redlining data. (20 points)
 bird <- st_read("data/gbif-birds-LA/gbif-birds-LA.shp") %>%
   filter(year >= 2022)
 ```
+
 ```{r}
 bird <- st_read("data/gbif-birds-LA/gbif-birds-LA.shp") %>% 
         filter(year >= 2022)
@@ -329,8 +323,10 @@ tm_shape(LA_redlining)+
 Please write 2-3 sentences reflecting on these results. Are they
 surprising? If so, why? What are some potential implications? (5 points)
 
-Based on the graph, Most A graded areas(green areas in the graph) showed low bird diversity (denoted by red dots) than B, C and D
-graded areas. The potential implication of this finding is
-that low graded areas offer unique habitat to bird species, thus policy
-makers should incorporate these type of findings so that biodiversity protection is ensured. Moreover, this finding challenges the
-belief that low graded areas have low species diversity.
+Based on the graph, Most A graded areas(green areas in the graph) showed
+low bird diversity (denoted by red dots) than B, C and D graded areas.
+The potential implication of this finding is that low graded areas offer
+unique habitat to bird species, thus policy makers should incorporate
+these type of findings so that biodiversity protection is ensured.
+Moreover, this finding challenges the belief that low graded areas have
+low species diversity.
