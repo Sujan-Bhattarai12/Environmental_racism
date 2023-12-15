@@ -181,8 +181,7 @@ ggplot(los_angeles) +
   ylab("Latitude")
 ```
 
-Percent of census block groups that have:\
-- less than 5% of the population is considered low income.
+Percent of census block groups that have less than 5% of the population is considered low income.
 
 ```{r }
 ##filter for rows where LOWINCPCT is less than 5%
@@ -194,9 +193,8 @@ proportion_calucalated <- los_angeles %>%
                           pull(proportion)
 ```
 
-Percent of census block groups that are:\
-- above the 80th percentile for Particulate Matter 2.5 AND above the
-80th percentile for Superfund proximity (10 points)
+Percent of census block groups that are above the 80th percentile for Particulate Matter 2.5 AND above the
+80th percentile for Superfund proximity.
 
 ```{r }
 ##using percentile coumns for air pollution and superfund proximity
@@ -235,8 +233,7 @@ redlining <- ggplot(LA_redlining)+
 redlining
 ```
 
-Number of census block groups that fall within areas with HOLC grades.
-
+finding number of census block groups that fall within areas with HOLC grades.
 ```{r}
 ##transform crs one to another to match
 los_angeles_transformed <- st_transform(los_angeles, crs = st_crs(LA_redlining))
@@ -255,11 +252,7 @@ nrow(dataframe_with_redlabeled_region)
 ```
 
 Summarize current conditions based on EJScreen data within historical
-redlining categories using the mean of the following variables:\
--% low income.\
-- percentile for particulate Matter 2.5.\
-- percentile for low life expectancy.\
-- percentile for air toxics cancer risk
+redlining categories using the mean of air pollution, life expectancy and air toxic cancer risk.
 
 ```{r }
 ##Inner join the redline data with census block subset 
@@ -281,7 +274,7 @@ pollution. In contrast, A graded area has comparatively low values for
 all of these parameters, suggesting that historically redlined areas are
 not good residential areas even in present context.
 
-# Part 2: Data analysis and Decision Making
+## Part 2: Data analysis and Decision Making
 
 For bird observations from 2022 that fall within neighborhoods with HOLC
 grads, find the percent of observations within each redlining categories
@@ -292,7 +285,7 @@ bird_in_holc_grade <- st_read("data/gbif-birds-LA/gbif-birds-LA.shp") %>%
   filter(year >= 2022)
 ```
 
-Prepare the Dataset for the plotting
+Prepare the dataset for the visualizaion:
 
 ```{r}
 ##read the shape file for the birds diveristy dataset
